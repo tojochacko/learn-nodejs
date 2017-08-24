@@ -15,5 +15,8 @@ router.post('/add/:id',
             storeController.upload, 
             catchErrors(storeController.resize),
             catchErrors(storeController.updateStore));
+router.get('/store/:slug', catchErrors(storeController.getStoreBySlug));
+router.get('/tags', catchErrors(storeController.getStoresByTags));
+router.get('/tags/:tag', catchErrors(storeController.getStoresByTags));
 
 module.exports = router;

@@ -38,12 +38,29 @@ const storeSchema = new mongoose.Schema({
   }
 });
 
-storeSchema.pre('save', function (next) {
-  //@TODO: slugs should be unique
+storeSchema.pre('save', async function (next) {
   if (this.isNew || this.isModified(this.name)) {
     this.slug = slug(this.name);
   }
+
+  //find store with the same slug name if any
+  const storeRegex = new RegExp(`^(${this.slug})(-([0-9])*)?$`,'i');
+  const storesWithSlug = await this.constructor.find({ slug: storeRegex });
+
+  if(storesWithSlug.length > 0) {
+    this.slug = `${this.slug}-${(storesWithSlug.length+1)}`;
+  }
   next();
 });
+
+storeSchema.statics.getTagsList = function() {
+  const tagsList = this.aggregate([
+    { $unwind : "$tags"},
+    { $group : { _id : "$tags", count : {$sum : 1} } },
+    { $sort : { count : -1 } }
+  ]);
+
+  return tagsList;
+};
 
 module.exports = mongoose.model('Store', storeSchema);
