@@ -24,8 +24,10 @@ exports.validateRegister = (req, res, next) => {
     gmail_remove_subaddress: false
   });
   req.checkBody('password', 'Password cannot be blank').notEmpty();
-  req.checkBody('password-confirm', 'Confirm Password cannot be blank').notEmpty();
-  req.checkBody('password-confirm', 'Oops! Your passwords do not match').equals(req.body.password);
+  req.checkBody('password-confirm', 'Confirm Password cannot be blank')
+  .notEmpty();
+  req.checkBody('password-confirm', 'Oops! Your passwords do not match')
+  .equals(req.body.password);
 
   const errors = req.validationErrors();
   if(errors) {
@@ -37,7 +39,6 @@ exports.validateRegister = (req, res, next) => {
     });
     return; // stop the function from running
   }
-
   next();
 };
 
@@ -45,6 +46,26 @@ exports.addUser = async (req, res, next) => {
   const user = new User({ email: req.body.email, name: req.body.name });
   const register = promisify(User.register, User);
   await register(user, req.body.password);
-
   next();
+};
+
+exports.account = (req, res) => {
+  res.render('account', {
+    title: 'Edit Your Account'
+  });
+};
+
+exports.updateAccount = async (req, res) => {
+  const updates = {
+    email: req.body.email,
+    name: req.body.name
+  };
+  const user = await User.findOneAndUpdate(
+    { _id: req.user._id },
+    { $set: updates },
+    { new: true, runValidators: true, context: 'query' }
+  );
+
+  req.flash('success', 'Your account is successfully updated!');
+  res.redirect('/account');
 };
