@@ -43,6 +43,17 @@ const storeSchema = new mongoose.Schema({
   }
 });
 
+// Define our indexes
+storeSchema.index({
+  name: 'text',
+  description: 'text'
+});
+
+storeSchema.index({
+  location: '2dsphere'
+});
+// Indexes end
+
 storeSchema.pre('save', async function (next) {
   if (this.isNew || this.isModified(this.name)) {
     this.slug = slug(this.name);
