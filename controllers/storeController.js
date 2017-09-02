@@ -2,16 +2,16 @@ const mongoose = require('mongoose');
 const Store = mongoose.model('Store');
 const Jimp = require('jimp');
 const uuid = require('uuid');
-const multer  = require('multer');
+const multer = require('multer');
 
 exports.upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1000 * 1000
   },
-  fileFilter: (req, file, next) => { 
-    if(!file.mimetype.startsWith('image/')) {
-      next({ message:'This is not a valid image file' }, false);
+  fileFilter: (req, file, next) => {
+    if (!file.mimetype.startsWith('image/')) {
+      next({ message: 'This is not a valid image file' }, false);
     }
     next(null, true);
   },
@@ -19,7 +19,7 @@ exports.upload = multer({
 
 exports.resize = async (req, res, next) => {
   //check if there is no new file to resize
-  if(!req.file) {
+  if (!req.file) {
     next(); //skip to the next middleware
     return;
   }
@@ -63,7 +63,7 @@ exports.getStores = async (req, res) => {
 };
 
 const confirmOwner = (store, user) => {
-  if(!store.author.equals(user._id)) {
+  if (!store.author.equals(user._id)) {
     throw Error('You are not the Store Owner');
   }
 };
@@ -93,8 +93,8 @@ exports.updateStore = async (req, res) => {
 exports.getStoreBySlug = async (req, res, next) => {
   const store = await Store.findOne({ slug: req.params.slug });
   //if store does not exists
-  if(!store) return next();
-  
+  if (!store) return next();
+
   res.render('store', {
     title: store.name,
     store
@@ -103,10 +103,10 @@ exports.getStoreBySlug = async (req, res, next) => {
 
 exports.getStoresByTags = async (req, res) => {
   const tag = req.params.tag;
-  const tagQuery = (tag) ? tag : { $exists: true }; 
+  const tagQuery = (tag) ? tag : { $exists: true };
 
   const tagsPromise = Store.getTagsList();
-  const storesPromise = Store.find({ tags : tagQuery });
+  const storesPromise = Store.find({ tags: tagQuery });
   const [tags, stores] = await Promise.all([tagsPromise, storesPromise]);
 
   res.render('tags', {
@@ -119,15 +119,42 @@ exports.getStoresByTags = async (req, res) => {
 
 exports.searchStores = async (req, res) => {
   const stores = await Store
-  .find({
-    $text: {
-      $search: req.query.q
-    }
-  }, {
-    score: { $meta: 'textScore' }
-  })
-  .sort({
-    score: { $meta: 'textScore' }
-  });
+    .find({
+      $text: {
+        $search: req.query.q
+      }
+    }, {
+      score: { $meta: 'textScore' }
+    })
+    .sort({
+      score: { $meta: 'textScore' }
+    });
   res.json(stores);
+};
+
+exports.mapStores = async (req, res) => {
+  const coordinates = [req.query.lng, req.query.lat].map(parseFloat);
+  const q = {
+    location: {
+      $near: {
+        $geometry: {
+          type: "Point",
+          coordinates
+        },
+        $maxDistance: 10000 // 10 kms
+      }
+    }
+  };
+
+  const stores = await Store
+  .find(q)
+  .select('picture name description location slug')
+  .limit(10);
+  res.json(stores);
+};
+
+exports.mapPage = (req, res) => {
+  res.render('map', {
+    title: 'Map'
+  })
 };
