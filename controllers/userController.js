@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
+const Store = mongoose.model('Store');
 const promisify = require('es6-promisify');
 
 exports.loginForm = (req, res) => {
@@ -68,4 +69,14 @@ exports.updateAccount = async (req, res) => {
 
   req.flash('success', 'Your account is successfully updated!');
   res.redirect('/account');
+};
+
+exports.getHearts = async (req, res) => {
+  const stores = await Store.find({
+    _id: { $in: req.user.hearts }
+  });
+  res.render('stores', {
+    title: 'Liked Stores',
+    stores
+  });
 };
