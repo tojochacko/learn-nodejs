@@ -1,2 +1,7 @@
 public/uploads
 package-lock.json
+!*.gitkeep
+
+node_modules/
+*.log
+variables.env
