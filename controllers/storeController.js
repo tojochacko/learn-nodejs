@@ -56,10 +56,39 @@ exports.createStore = async (req, res) => {
 };
 
 exports.getStores = async (req, res) => {
-  const stores = await Store.find();
+  const perPage = 3;
+  const currPage = req.params.page || 1;
+  const skip = (perPage*currPage) - perPage;
+
+  if(currPage == 0 ) {
+    req.flash('info', `Hey redirecting you to the first page.`);
+    res.redirect('/stores');
+    return;
+  }
+
+  //pagination handle
+  const storePromise = Store
+    .find()
+    .skip(skip)
+    .limit(perPage)
+    .sort({ created: 'desc' });
+  const countPromise = Store.count();
+
+  const [stores, count] = await Promise.all([storePromise, countPromise]);
+  const pages = Math.ceil(count / perPage);
+  if (!stores.length && skip) {
+    req.flash('info', `Hey, you asked for a page ${currPage} which does not exists. `+
+    `So I put you on page ${pages}`);
+    res.redirect(`/stores/page/${pages}`);
+    return;
+  }
+
   res.render('stores', {
     title: 'Stores',
-    stores: stores
+    stores,
+    page: currPage,
+    pages,
+    count
   });
 };
 
